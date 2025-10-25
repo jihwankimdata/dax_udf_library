@@ -1,6 +1,6 @@
 # Stats.FYTDailySlope — Financial Year–to–Date Daily Trend (LINESTX)
 
-**TL;DR**  
+**Overview**  
 Returns a single **daily slope** (trend) of a measure over the **financial year** determined by your date table. Defaults to the **latest valid fact date**; remains filter-aware for non-date filters but evaluates across the **full financial year**.
 
 ---
