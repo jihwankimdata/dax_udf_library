@@ -16,7 +16,7 @@ Returns a **format string** for the current measure that can **auto-scale (K/M/B
 
 ---
 
-## Model Requirements
+## PBI Data Model Requirements
 
 ### Required table
 - `__apply_dynamic_format_string`

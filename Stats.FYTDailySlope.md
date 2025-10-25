@@ -17,7 +17,7 @@ A **scalar** numeric value = *Δ measure / day* for the selected FY (or latest F
 
 ---
 
-## Model Requirements
+## PBI Data Model Requirements
 - **Date table** (e.g., `Date`)
   - Columns: `DateKey` *(Int, YYYYMMDD)*, `Date` *(Date)*, `FinYearStart` *(Date)*
   - One row per calendar date; `FinYearStart` maps every date to its FY start date.
