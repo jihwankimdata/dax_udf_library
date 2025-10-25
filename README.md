@@ -1,167 +1,172 @@
 # PowerBI DAX UDF Library
 
-## Overview
+Namespaced, reusable DAX User-Defined Functions (UDFs) for Power BI. Import functions, call them like built-ins, and keep business logic consistent, documented, and versioned.
 
-This toolkit provides a comprehensive collection of DAX (Data Analysis Expressions) User-Defined Functions (UDFs) specifically designed for Power BI reports and data models. UDFs allow you to package reusable, parameterized DAX logic into your models, making your DAX code more maintainable, consistent, and efficient.
+## What is a DAX UDF?
 
-## Why Use DAX UDFs?
+A DAX UDF is a reusable function you define in DAX (preview) and call from measures/expressions. Benefits:
+- Consistency
+- Maintainability
+- Context control
 
-1. **Code Reusability**: Define calculations once and reuse them across multiple measures, calculated columns, and visuals
-2. **Maintainability**: Centralize business logic in one place, making updates and fixes more manageable
-3. **Consistency**: Ensure uniform calculations across your entire data model
-4. **Type Safety**: Benefit from optional type hints and type check helpers for more reliable code
-5. **Version Control**: Track changes and manage different versions of your business logic
-6. **Collaboration**: Share standardized calculations across team members and projects
-
-## Prerequisites
-
-- Power BI Desktop (latest version recommended)
-- Enable DAX UDFs in Preview Features:
-  1. Go to **File > Options and settings > Options**
-  2. Select **Preview features**
-  3. Check **DAX user-defined functions**
-  4. Click **OK** and restart Power BI Desktop
-
-## Function Categories
-
-This library includes UDFs for various common business scenarios:
-
-1. **Financial Functions**
-   - Currency conversion
-
-2. **Date/Time Functions**
-   - Fiscal period calculations
-   - Business day computations
-   - Date range manipulations
-
-3. **Statistical Functions**
-   - Moving averages
-   - Statistical distributions
-
-4. **Text Manipulation**
-   - String formatting
-   - Text parsing
-   - Pattern matching
-
-5. **Business Logic**
-   - Ranking functions
-   - Custom aggregations
-
-## Using UDFs in Power BI Data Models
-
-### Basic Syntax
+### Signature Pattern
 
 ```dax
-FUNCTION <FunctionName> = (
-    <ParameterName>: <ParameterType>,
+DEFINE 
+FUNCTION <Namespace.FunctionName> = (
+    param1 : <TYPE> [VAL|EXPR],
     ...
 ) => <FunctionBody>
 ```
 
-### Example: Simple Tax Calculation
+### Types
+- `NUMERIC`
+- `STRING`
+- `BOOLEAN`
+- `DATETIME`
+- `TABLE`
+- `VARIANT`
+- `INT64`
+- `DECIMAL`
+- `DOUBLE`
+
+### Modes
+
+- `VAL` (default): evaluate before call (eager)
+- `EXPR`: evaluate inside function (lazy, context-aware)
+
+## Prerequisites
+
+1. Power BI Desktop (latest)
+2. Enable DAX UDF:
+   - File → Options → Preview features
+   - Enable "DAX user-defined functions"
+   - Restart Power BI Desktop
+
+
+## Importing Functions
+
+### Option A: DAX Query View (Power BI Desktop)
+
+1. Open DAX Query View
+2. Paste the `DEFINE FUNCTION` block(s) from `/src/.../*.dax`
+3. Save to model
+
+### Option B: 
+
+
+## Usage
+
+### Example Function and Measure
 
 ```dax
 DEFINE
-/// AddTax takes in amount and returns amount including tax
-FUNCTION AddTax = (
+/// Financial.AddTax(amount: NUMERIC VAL) -> NUMERIC
+/// Returns amount with 10% tax.
+/// Model Requirements: none
+FUNCTION Financial.AddTax = (
     amount : NUMERIC
-) =>
-    amount * 1.1
+) => amount * 1.10
 
-// Usage in a measure
-Total Sales with Tax = AddTax([Total Sales])
+-- In your model
+Total Sales w/ Tax = Financial.AddTax ( [Total Sales] )
 ```
 
-### Parameter Types
+### EXPR vs VAL (context control)
 
-#### Data Types
-- `Variant`: Any scalar value
-- `Int64`: Whole numbers
-- `Decimal`: Fixed-precision decimal
-- `Double`: Floating-point decimal
-- `String`: Text values
-- `DateTime`: Date/time values
-- `Boolean`: TRUE/FALSE values
-- `Numeric`: Any numerical value
-
-#### Parameter Modes
-DAX UDFs support two parameter modes that control when and how parameters are evaluated:
-
-- `VAL` (Eager Evaluation)
-  - Default mode if not specified
-  - Expression is evaluated once before invoking the function
-  - Result is passed into the function
-  - Best for simple scalar or table inputs
-  - Example: `amount : NUMERIC VAL`
-
-- `EXPR` (Lazy Evaluation)
-  - Expression is evaluated inside the function
-  - Can be evaluated multiple times in different contexts
-  - Allows control over evaluation context (row/filter)
-  - Required for reference parameters
-  - Useful for context-sensitive calculations
-  - Example: `table : TABLE EXPR`
-
-Example showing the difference:
 ```dax
 DEFINE
-// VAL parameter - evaluated before function call
-FUNCTION CountRowsNow = (
-    t : TABLE VAL
-) =>
-    COUNTROWS(CALCULATETABLE(t, ALL('Date')))
+FUNCTION Stats.CountAllDates_VAL = ( t: TABLE VAL ) =>
+    COUNTROWS( CALCULATETABLE( t, ALL('Date') ) )
 
-// EXPR parameter - evaluated inside function
-FUNCTION CountRowsLater = (
-    t : TABLE EXPR
-) =>
-    COUNTROWS(CALCULATETABLE(t, ALL('Date')))
-
-// Different results when called with filtered table
-// CountRowsNow keeps external filter
-// CountRowsLater removes date filter
+FUNCTION Stats.CountAllDates_EXPR = ( t: TABLE EXPR ) =>
+    COUNTROWS( CALCULATETABLE( t, ALL('Date') ) )
 ```
 
+**Note**: With an external 'Date' filter:
+- `VAL` preserves the filter at call time
+- `EXPR` re-evaluates inside the function and can modify context (e.g., `ALL('Date')`)
 
-## Scope and Model Requirements
+## Model Requirements
 
-Note: The UDFs in this library are implemented to be generally available and reusable across Power BI projects — they are not limited to a single Power BI data model. However, each UDF includes a documented "Model Requirements" section describing the exact tables, relationships, keys and data-quality expectations necessary for correct operation. You must ensure your data model satisfies the requirements listed for a given UDF (for example required date or currency tables, specific key columns and relationship cardinality); otherwise the function may return incorrect results or fail.
+Each `.dax` file begins with `///` docs including Model Requirements:
+- Required tables
+- Keys
+- Relationships
+- Cardinality
+- Data quality
 
-For details on the model required by a particular UDF, open the file for that function and review the `Model Requirements` section included with the function's documentation.
+⚠️ **Important**: Ensure your model matches these requirements, or outputs may be incorrect.
 
+## Conventions
 
-## Best Practices
+### Documentation (mandatory in each file)
 
-1. **Documentation**
-   - Always include function descriptions using `///` comments
-   - Document parameter types and expected values
-   - Provide usage examples
+```dax
+/// <Namespace.FunctionName>
+/// Summary: <what it does>
+/// Params:
+///   param (TYPE [VAL|EXPR]): <meaning>
+/// Returns: <TYPE>
+/// Model Requirements: <tables/columns/relationships>
+/// Example:
+///   <one-line measure usage>
+/// Notes: <edge cases/perf>
+```
 
-2. **Naming Conventions**
-   - Use clear, descriptive function names
-   - Follow consistent naming patterns
-   - Consider using namespaces for organization
+### Naming
 
-3. **Error Handling**
-   - Include input validation
-   - Provide meaningful error messages
-   - Handle edge cases appropriately
+Format: `<Namespace>.<VerbNoun>` 
+Examples:
+- `Financial.AddTax`
+- `DateTime.FiscalYearIndex`
 
-4. **Performance**
-   - Consider evaluation context
-   - Use appropriate parameter modes (val/expr)
-   - Optimize complex calculations
+### Performance Best Practices
+
+1. Be explicit with context:
+   - `KEEPFILTERS`
+   - `REMOVEFILTERS`
+   - `ALL`
+   - `ALLEXCEPT`
+
+2. Prefer set-based patterns
+   - Avoid repeated heavy calculations
+   - Wrap once in a helper UDF
+
+3. Parameter modes:
+   - Use `EXPR` for context-sensitive parameters (tables/measures)
+   - Use `VAL` for scalars
 
 ## Contributing
 
-We welcome contributions to this DAX UDF library! Please follow these steps:
+### Workflow
 
-1. Fork the repository
-2. Create a feature branch
-3. Add your UDFs with proper documentation
-4. Submit a pull request
+1. Fork → create feature branch
+2. Add function under the correct namespace folder in `/src`
+3. Include complete `///` header:
+   - Summary
+   - Params with type & mode
+   - Returns
+   - Model Requirements
+   - Example
+   - Notes
+4. Validate in a sample model (e.g., Contoso/AdventureWorks)
+5. Open a PR with:
+   - Purpose
+   - Usage
+   - Trade-offs
+   - Performance notes (timings/screens if helpful)
 
-## Resources
+### PR Checklist
 
-- [Official Microsoft DAX UDF Documentation](https://learn.microsoft.com/en-us/dax/best-practices/dax-user-defined-functions)
-- [Power BI Documentation](https://learn.microsoft.com/en-us/power-bi/)
+- [ ] File name = full function name; correct namespace folder
+- [ ] `///` header complete (incl. Model Requirements)
+- [ ] Compiles and runs in a basic model
+- [ ] No breaking changes (or clearly documented)
+
+### Folder Additions
+
+When adding a new namespace:
+- Include a short `README.md` inside the folder
+- List all functions
+- Document typical model prerequisites
