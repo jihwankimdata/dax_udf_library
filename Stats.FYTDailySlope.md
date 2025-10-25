@@ -46,7 +46,7 @@ DEFINE
 /// @param _Measure : EXPR - The measure expression to evaluate (use EXPR for context sensitivity).
 ///
 /// @returns Numeric slope representing daily trend for the financial year period.
-FUNCTION _fn_LastYTDTrendLINESTX = (
+FUNCTION _fn_Stats.FYTDailySlope = (
         _facttable : ANYREF,
         _factdatekey : ANYREF,
         _dimdatetable : ANYREF,
