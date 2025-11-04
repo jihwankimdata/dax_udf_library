@@ -54,7 +54,7 @@ DEFINE
 ///   _trendMeaning (STRING VAL): "good" or "bad" - Business context for coloring
 /// Returns: STRING - SVG image URL for Power BI visuals
 /// Model Requirements: None, but output measure must have Data Category = Image URL
-FUNCTION Image.TrendArrowImage = (
+FUNCTION Image.TrendArrowSVG = (
     _trendDirection : STRING,
     _trendMeaning : STRING
 ) =>
